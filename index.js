@@ -6,7 +6,7 @@ const { Server } = require("socket.io");
 const io = new Server(server, {
   path: '/socket',
   cors: {
-    origin: "*"
+    origin: "https://mines-84c898177d88.herokuapp.com/"
   }
 });
 
