@@ -10,7 +10,7 @@ const corsOptions = {
   // origin: "*"
 }
 
-const server = http.createServer(app, corsOptions);
+const server = http.createServer(app);
 
 const { Server } = require("socket.io");
 const io = new Server(server,
