@@ -3,26 +3,24 @@ const app = express();
 const cors = require('cors');
 const http = require('http');
 
-const corsOptions = {
-  methods: ["GET", "POST"],
-  credentials: true,
-  origin: "https://mines-84c898177d88.herokuapp.com/"
-  // origin: "*"
-}
-
 const server = http.createServer(app);
 
 const { Server } = require("socket.io");
 const io = new Server(server,
   {
-    cors: corsOptions,
+    cors: {
+      methods: ["GET", "POST"],
+      credentials: true,
+      origin: "https://mines-84c898177d88.herokuapp.com/"
+      // origin: "*"
+    },
     path: '/socket'
   }
 );
 
 const rooms = new Set();
 
-app.use(cors(corsOptions));
+app.use(cors());
 
 app.get('/', (req, res) => {
   res.send('Hello world');
@@ -58,6 +56,8 @@ io.on('connection', (socket) => {
   });
 });
 
-server.listen(process.env.PORT || 3001, () => {
-  console.log('listening on *:3001');
+const port = process.env.PORT || 3001;
+
+server.listen(port, () => {
+  console.log(`listening on ${port}`);
 });
