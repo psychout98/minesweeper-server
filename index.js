@@ -10,8 +10,6 @@ const corsOptions = {
   // origin: "*"
 }
 
-app.use(cors(corsOptions));
-
 const server = http.createServer(app, corsOptions);
 
 const { Server } = require("socket.io");
@@ -23,6 +21,8 @@ const io = new Server(server,
 );
 
 const rooms = new Set();
+
+app.use(cors(corsOptions));
 
 app.get('/', (req, res) => {
   res.send('Hello world');
