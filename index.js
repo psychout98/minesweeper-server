@@ -3,24 +3,25 @@ const app = express();
 const cors = require('cors');
 const http = require('http');
 
+const corsOptions = {
+  credentials: true,
+  origin: "https://mines-84c898177d88.herokuapp.com/"
+  // origin: "*"
+}
+
 const server = http.createServer(app);
 
 const { Server } = require("socket.io");
 const io = new Server(server,
   {
-    cors: {
-      methods: ["GET", "POST"],
-      credentials: true,
-      origin: "https://mines-84c898177d88.herokuapp.com/"
-      // origin: "*"
-    },
+    cors: corsOptions,
     path: '/socket'
   }
 );
 
 const rooms = new Set();
 
-app.use(cors());
+app.use(cors(corsOptions));
 
 app.get('/', (req, res) => {
   res.send('Hello world');
