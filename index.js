@@ -5,7 +5,7 @@ const http = require('http');
 
 const corsOptions = {
   credentials: true,
-  origin: "https://mines-84c898177d88.herokuapp.com/"
+  origin: "https://mines-84c898177d88.herokuapp.com"
   // origin: "*"
 }
 
