@@ -4,9 +4,9 @@ const cors = require('cors');
 const http = require('http');
 
 const corsOptions = {
-  // credentials: true,
-  // origin: "https://mines-84c898177d88.herokuapp.com"
-  origin: "*"
+  credentials: true,
+  origin: "https://mines-84c898177d88.herokuapp.com"
+  // origin: "*"
 }
 
 const server = http.createServer(app);
