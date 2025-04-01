@@ -56,8 +56,8 @@ io.on('connection', (socket) => {
     io.to(gameId).except(socket.id).emit("receiveBoard", board);
   });
 
-  socket.on("uploadSpace", (space, gameId) => {
-    io.to(gameId).except(socket.id).emit("receiveSpace", space);
+  socket.on("uploadEvent", (space, gameId) => {
+    io.to(gameId).except(socket.id).emit("receiveEvent", space);
   });
 });
 
