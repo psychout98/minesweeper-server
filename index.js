@@ -4,9 +4,9 @@ const cors = require('cors');
 const http = require('http');
 
 const corsOptions = {
-  credentials: true,
-  origin: "https://mines-84c898177d88.herokuapp.com"
-  // origin: "*"
+  // credentials: true,
+  // origin: "https://mines-84c898177d88.herokuapp.com"
+  origin: "*"
 }
 
 const server = http.createServer(app);
@@ -54,6 +54,10 @@ io.on('connection', (socket) => {
 
   socket.on("uploadBoard", (board, gameId) => {
     io.to(gameId).except(socket.id).emit("receiveBoard", board);
+  });
+
+  socket.on("uploadSpace", (space, gameId) => {
+    io.to(gameId).except(socket.id).emit("receiveSpace", space);
   });
 });
 
