@@ -1,5 +1,5 @@
 import { Server } from "socket.io";
-import { Action, Space, buildMinefield, cascadeReveal, Event, getEmptyBoard, revealAll } from "./gameUtil";
+import { Space, Event, getEmptyBoard, actionEvent } from "./gameUtil";
 
 export default class Game {
 
@@ -36,36 +36,11 @@ export default class Game {
             this.processing = true;
             while (this.queue.length > 0) {
                 const top = this.queue[0];
-                this.actionEvent(top);
+                actionEvent(top, this.board, this.started);
                 this.queue.splice(0, 1);
             }
             this.processing = false;
             this.io.to(this.gameId).emit('receiveBoard', this.board);
-        }
-    }
-
-    actionEvent(event: Event) {
-        const space = event.space;
-        const row = space.y;
-        const col = space.x;
-        const currentSpace = this.board[row][col];
-        if (space.hidden === currentSpace.hidden && space.flagged === currentSpace.flagged) {
-            if (event.action === Action.REVEAL && currentSpace.hidden) {
-                if (this.started) {
-                    if (currentSpace.value === -1) {
-                        revealAll(this.board);
-                    } else if (currentSpace.value === 0) {
-                        cascadeReveal(this.board, row, col);
-                    } else {
-                        currentSpace.hidden = false;
-                    }
-                } else {
-                    buildMinefield(this.board, 99, currentSpace);
-                }
-            }
-            if (event.action === Action.FLAG) {
-                currentSpace.flagged = !currentSpace.flagged;
-            }
         }
     }
 }

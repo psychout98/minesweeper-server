@@ -115,3 +115,28 @@ export const cascadeReveal = (board: Space[][], row: number, col: number) => {
         });
     }
 }
+
+export const actionEvent = (event: Event, board: Space[][], started: boolean) => {
+    const space = event.space;
+    const row = space.y;
+    const col = space.x;
+    const currentSpace = board[row][col];
+    if (space.hidden === currentSpace.hidden && space.flagged === currentSpace.flagged) {
+        if (event.action === Action.REVEAL && currentSpace.hidden) {
+            if (started) {
+                if (currentSpace.value === -1) {
+                    revealAll(board);
+                } else if (currentSpace.value === 0) {
+                    cascadeReveal(board, row, col);
+                } else {
+                    currentSpace.hidden = false;
+                }
+            } else {
+                buildMinefield(board, 99, currentSpace);
+            }
+        }
+        if (event.action === Action.FLAG) {
+            currentSpace.flagged = !currentSpace.flagged;
+        }
+    }
+}
