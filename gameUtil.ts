@@ -116,23 +116,23 @@ export const cascadeReveal = (board: Space[][], row: number, col: number) => {
     }
 }
 
-export const actionEvent = (event: Event, board: Space[][], started: boolean) => {
+export const actionEvent = (event: Event, board: Board) => {
     const space = event.space;
     const row = space.y;
     const col = space.x;
-    const currentSpace = board[row][col];
+    const currentSpace = board.spaces[row][col];
     if (space.hidden === currentSpace.hidden && space.flagged === currentSpace.flagged) {
         if (event.action === Action.REVEAL && currentSpace.hidden) {
-            if (started) {
+            if (board.started) {
                 if (currentSpace.value === -1) {
-                    revealAll(board);
+                    revealAll(board.spaces);
                 } else if (currentSpace.value === 0) {
-                    cascadeReveal(board, row, col);
+                    cascadeReveal(board.spaces, row, col);
                 } else {
                     currentSpace.hidden = false;
                 }
             } else {
-                buildMinefield(board, 99, currentSpace);
+                buildMinefield(board.spaces, 99, currentSpace);
             }
         }
         if (event.action === Action.FLAG) {

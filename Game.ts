@@ -1,10 +1,9 @@
 import { Server } from "socket.io";
-import { Space, Event, getEmptyBoard, actionEvent } from "./gameUtil";
+import { Board, Event, getEmptyBoard, actionEvent } from "./gameUtil";
 
 export default class Game {
 
-    started: boolean;
-    board: Space[][];
+    board: Board;
     players: string[];
     queue: Event[];
     processing: boolean;
@@ -14,8 +13,10 @@ export default class Game {
     constructor(io: Server, gameId: string, player: string) {
         this.io = io;
         this.gameId = gameId;
-        this.started = false;
-        this.board = getEmptyBoard(30, 16);
+        this.board = {
+            started: false,
+            spaces: getEmptyBoard(30, 16)
+        };
         this.queue = [];
         this.players = [player];
         this.processing = false;
@@ -36,7 +37,7 @@ export default class Game {
             this.processing = true;
             while (this.queue.length > 0) {
                 const top = this.queue[0];
-                actionEvent(top, this.board, this.started);
+                actionEvent(top, this.board);
                 this.queue.splice(0, 1);
             }
             this.processing = false;
