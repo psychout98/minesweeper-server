@@ -45,4 +45,12 @@ export default class Game {
             this.io.to(this.gameId).emit('receiveBoard', this.board);
         }
     }
+
+    reset() {
+        this.board = {
+            started: false,
+            spaces: getEmptyBoard(30, 16)
+        };
+        this.io.to(this.gameId).emit('receiveBoard', this.board);
+    }
 }

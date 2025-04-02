@@ -65,8 +65,18 @@ io.on('connection', (socket) => {
     io.to(gameId).except(socket.id).emit("mouseMove", { ...mouseData, socketId: socket.id });
   });
 
-  socket.on("uploadEvent", (gameId: string, event: Event) => {
-    games.get(gameId)?.handleEvent(event);
+  socket.on("uploadEvent", (event: Event) => {
+    const gameId = players.get(socket.id);
+    if (gameId) {
+      games.get(gameId)?.handleEvent(event);
+    }
+  });
+
+  socket.on("newGame", () => {
+    const gameId = players.get(socket.id);
+    if (gameId) {
+      games.get(gameId)?.reset();
+    }
   });
 });
 
