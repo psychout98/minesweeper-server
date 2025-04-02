@@ -37,8 +37,8 @@ app.get('/newGame/:playerId?', (req, res) => {
     if (gameId) {
       const game = games.get(gameId);
       if (game) {
-        game.reset();
-        res.status(200).send({ gameId, playerId });
+        game.reset(playerId);
+        res.status(200).send({ gameId, playerId, board: game.board });
         return;
       }
     }
@@ -77,19 +77,24 @@ app.get('/joinGame/:gameId', (req, res) => {
   res.status(200).send({ gameId, playerId, board: games.get(gameId).board });
 });
 
-app.post('/event/:playerId', (req, res) => {
-  const playerId = Number.parseInt(req.params.playerId);
+app.post('/event', (req, res) => {
+  const event = req.body.event;
+  const playerId = event.playerId;
   const gameId = players.get(playerId);
   if (gameId) {
     const game = games.get(gameId);
     if (game) {
-      const event = req.body.event;
+      const event = {
+        ...req.body.event,
+        callback: (board) => res.status(200).send({ gameId, playerId, board })
+      };
       game.handleEvent(event);
-      res.status(200).send();
-      return;
+    } else {
+      res.status(404).send();
     }
+  } else {
+    res.status(404).send();
   }
-  res.status(400).send();
 });
 
 io.on('connection', (socket) => {

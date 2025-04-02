@@ -12,7 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.Game = void 0;
 const gameUtil_1 = require("./gameUtil");
 class Game {
-    constructor(io, gameId, player) {
+    constructor(io, gameId, playerId) {
         this.io = io;
         this.gameId = gameId;
         this.board = {
@@ -20,9 +20,8 @@ class Game {
             spaces: (0, gameUtil_1.getEmptyBoard)(30, 16)
         };
         this.queue = [];
-        this.players = [player];
+        this.players = [playerId];
         this.processing = false;
-        this.emitBoard();
     }
     addPlayer(player) {
         this.players.push(player);
@@ -40,26 +39,31 @@ class Game {
     processQueue() {
         return __awaiter(this, void 0, void 0, function* () {
             if (!this.processing) {
+                const callbacks = [];
+                const playerIds = [];
                 this.processing = true;
                 while (this.queue.length > 0) {
                     const top = this.queue[0];
+                    callbacks.push(top.callback);
+                    playerIds.push(top.playerId.toString());
                     (0, gameUtil_1.actionEvent)(top, this.board);
                     this.queue.splice(0, 1);
                 }
                 this.processing = false;
-                this.emitBoard();
+                callbacks.forEach(f => f(this.board));
+                this.emitBoard(playerIds);
             }
         });
     }
-    reset() {
+    reset(playerId) {
         this.board = {
             started: false,
             spaces: (0, gameUtil_1.getEmptyBoard)(30, 16)
         };
-        this.emitBoard();
+        this.emitBoard([playerId.toString()]);
     }
-    emitBoard() {
-        this.io.to(this.gameId).emit('receiveBoard', this.board);
+    emitBoard(playerIds = []) {
+        this.io.to(this.gameId).except(playerIds).emit('receiveBoard', this.board);
     }
 }
 exports.Game = Game;

@@ -19,6 +19,8 @@ export enum Action {
 export interface Event {
     space: Space;
     action: Action;
+    callback: Function;
+    playerId: number;
 }
 
 export const buildMinefield = (spaces: Space[][], bombs: number, firstSpace: Space) => {

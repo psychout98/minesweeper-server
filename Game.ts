@@ -10,7 +10,7 @@ export class Game {
     io: Server;
     gameId: string;
 
-    constructor(io: Server, gameId: string, player: string) {
+    constructor(io: Server, gameId: string, playerId: string) {
         this.io = io;
         this.gameId = gameId;
         this.board = {
@@ -18,9 +18,8 @@ export class Game {
             spaces: getEmptyBoard(30, 16)
         };
         this.queue = [];
-        this.players = [player];
+        this.players = [playerId];
         this.processing = false;
-        this.emitBoard();
     }
 
     addPlayer(player: string) {
@@ -39,26 +38,31 @@ export class Game {
 
     async processQueue() {
         if (!this.processing) {
+            const callbacks: Function[] = [];
+            const playerIds: string[] = [];
             this.processing = true;
             while (this.queue.length > 0) {
                 const top = this.queue[0];
+                callbacks.push(top.callback);
+                playerIds.push(top.playerId.toString());
                 actionEvent(top, this.board);
                 this.queue.splice(0, 1);
             }
             this.processing = false;
-            this.emitBoard();
+            callbacks.forEach(f => f(this.board));
+            this.emitBoard(playerIds);
         }
     }
 
-    reset() {
+    reset(playerId: number) {
         this.board = {
             started: false,
             spaces: getEmptyBoard(30, 16)
         };
-        this.emitBoard();
+        this.emitBoard([playerId.toString()]);
     }
 
-    emitBoard() {
-        this.io.to(this.gameId).emit('receiveBoard', this.board);
+    emitBoard(playerIds: string[] = []) {
+        this.io.to(this.gameId).except(playerIds).emit('receiveBoard', this.board);
     }
 }
