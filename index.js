@@ -1,7 +1,7 @@
-import express from 'express';
+const express = require('express');
 const app = express();
-import cors from 'cors';
-import http from 'http';
+const cors = require('cors');
+const http = require('http');
 
 const corsOptions = {
   credentials: true,
@@ -11,9 +11,7 @@ const corsOptions = {
 
 const server = http.createServer(app);
 
-import { Server } from "socket.io";
-import Game from './Game';
-import { Event } from './gameUtil';
+const { Server } = require("socket.io");
 const io = new Server(server,
   {
     cors: corsOptions,
@@ -21,8 +19,8 @@ const io = new Server(server,
   }
 );
 
-const games = new Map<string, Game>();
-const players = new Map<string, string>();
+const games = new Map();
+const players = new Map();
 
 app.use(cors(corsOptions));
 
@@ -65,7 +63,7 @@ io.on('connection', (socket) => {
     io.to(gameId).except(socket.id).emit("mouseMove", { ...mouseData, socketId: socket.id });
   });
 
-  socket.on("uploadEvent", (event: Event) => {
+  socket.on("uploadEvent", (event) => {
     const gameId = players.get(socket.id);
     if (gameId) {
       games.get(gameId)?.handleEvent(event);
