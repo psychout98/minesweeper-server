@@ -20,6 +20,7 @@ export default class Game {
         this.queue = [];
         this.players = [player];
         this.processing = false;
+        this.io.to(this.gameId).emit('receiveBoard', this.board);
     }
 
     deletePlayer(player: string) {
