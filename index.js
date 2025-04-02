@@ -2,11 +2,12 @@ const express = require('express');
 const app = express();
 const cors = require('cors');
 const http = require('http');
+const bodyParser = require('body-parser');
 
 const corsOptions = {
-  credentials: true,
-  origin: "https://mines-84c898177d88.herokuapp.com"
-  // origin: "*"
+  // credentials: true,
+  // origin: "https://mines-84c898177d88.herokuapp.com"
+  origin: "*"
 }
 
 const server = http.createServer(app);
@@ -25,58 +26,96 @@ const games = new Map();
 const players = new Map();
 
 app.use(cors(corsOptions));
+app.use(bodyParser.json());
 
-app.get('/randomId', (req, res) => {
-  let randomId = Math.floor(Math.random() * 8999) + 1000;
-  while (games.has(randomId.toString())) {
-    randomId = Math.floor(Math.random() * 8999) + 1000;
+app.get('/newGame/:playerId?', (req, res) => {
+  let playerIdParam = req.params.playerId;
+  let playerId;
+  if (playerIdParam) {
+    playerId = Number.parseInt(playerIdParam);
+    let gameId = players.get(playerId);
+    if (gameId) {
+      const game = games.get(gameId);
+      if (game) {
+        game.reset();
+        res.status(200).send({ gameId, playerId });
+        return;
+      }
+    }
+  } else {
+    playerId = Math.floor(Math.random() * 8999) + 1000;
+    while (players.has(playerId)) {
+      playerId = Math.floor(Math.random() * 8999) + 1000;
+    }
   }
-  res.send(randomId.toString());
+  let gameId = Math.floor(Math.random() * 8999) + 1000;
+  while (games.has(gameId)) {
+    gameId = Math.floor(Math.random() * 8999) + 1000;
+  }
+  players.set(playerId, gameId);
+  const game = games.get(gameId);
+  if (game) {
+    game.addPlayer(playerId);
+  } else {
+    games.set(gameId, new Game(io, gameId, playerId));
+  }
+  res.status(200).send({ gameId, playerId, board: games.get(gameId).board });
+});
+
+app.get('/joinGame/:gameId', (req, res) => {
+  let playerId = Math.floor(Math.random() * 8999) + 1000;
+  while (players.has(playerId)) {
+    playerId = Math.floor(Math.random() * 8999) + 1000;
+  }
+  let gameId = Number.parseInt(req.params.gameId);
+  const game = games.get(gameId);
+  if (game) {
+    game.addPlayer(playerId);
+  } else {
+    games.set(gameId, new Game(io, gameId, playerId));
+  }
+  res.status(200).send({ gameId, playerId, board: games.get(gameId).board });
+});
+
+app.post('/event/:playerId', (req, res) => {
+  const playerId = Number.parseInt(req.params.playerId);
+  const gameId = players.get(playerId);
+  if (gameId) {
+    const game = games.get(gameId);
+    if (game) {
+      const event = req.body.event;
+      game.handleEvent(event);
+      res.status(200).send();
+      return;
+    }
+  }
+  res.status(400).send();
 });
 
 io.on('connection', (socket) => {
+  console.log('a user connected', socket.id);
 
-  socket.on("subscribe", (gameId) => {
+  socket.on("subscribe", (gameId, playerId) => {
     socket.join(gameId);
-    players.set(socket.id, gameId);
-    if (!games.has(gameId)) {
-      games.set(gameId, new Game(io, gameId, socket.id));
-    }
-    io.to(gameId).except(socket.id).emit("userJoined");
-  });
+    socket.join(playerId);
 
-  socket.on("disconnecting", () => {
-    const gameId = players.get(socket.id);
-    if (gameId) {
-      players.delete(socket.id);
-      const game = games.get(gameId);
-      if (game) {
-        game.deletePlayer(socket.id);
-        if (game.players.length === 0) {
-          games.delete(gameId);
-        } else {
-          io.to(gameId).emit("mouseLeave", socket.id);
+    socket.on("disconnecting", () => {
+      if (players.delete(playerId)) {
+        const game = games.get(gameId);
+        if (game) {
+          game.deletePlayer(playerId);
+          if (game.players.length === 0) {
+            games.delete(gameId);
+          } else {
+            io.to(gameId).emit("mouseLeave", playerId);
+          }
         }
       }
-    }
-  });
+    });
 
-  socket.on("mouseMove", (mouseData, gameId) => {
-    io.to(gameId).except(socket.id).emit("mouseMove", { ...mouseData, socketId: socket.id });
-  });
-
-  socket.on("uploadEvent", (event) => {
-    const gameId = players.get(socket.id);
-    if (gameId) {
-      games.get(gameId)?.handleEvent(event);
-    }
-  });
-
-  socket.on("newGame", () => {
-    const gameId = players.get(socket.id);
-    if (gameId) {
-      games.get(gameId)?.reset();
-    }
+    socket.on("mouseMove", (x, y) => {
+      io.to(gameId).except(playerId).emit("mouseMove", x, y, playerId);
+    });
   });
 });
 

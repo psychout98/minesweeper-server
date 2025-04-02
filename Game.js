@@ -22,15 +22,20 @@ class Game {
         this.queue = [];
         this.players = [player];
         this.processing = false;
-        this.io.to(this.gameId).emit('receiveBoard', this.board);
+        this.emitBoard();
+    }
+    addPlayer(player) {
+        this.players.push(player);
     }
     deletePlayer(player) {
         const index = this.players.findIndex(p => p === player);
         this.players.splice(index, 1);
     }
     handleEvent(event) {
-        this.queue.push(event);
-        this.processQueue();
+        return __awaiter(this, void 0, void 0, function* () {
+            this.queue.push(event);
+            this.processQueue();
+        });
     }
     processQueue() {
         return __awaiter(this, void 0, void 0, function* () {
@@ -42,7 +47,7 @@ class Game {
                     this.queue.splice(0, 1);
                 }
                 this.processing = false;
-                this.io.to(this.gameId).emit('receiveBoard', this.board);
+                this.emitBoard();
             }
         });
     }
@@ -51,6 +56,9 @@ class Game {
             started: false,
             spaces: (0, gameUtil_1.getEmptyBoard)(30, 16)
         };
+        this.emitBoard();
+    }
+    emitBoard() {
         this.io.to(this.gameId).emit('receiveBoard', this.board);
     }
 }

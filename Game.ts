@@ -20,7 +20,11 @@ export class Game {
         this.queue = [];
         this.players = [player];
         this.processing = false;
-        this.io.to(this.gameId).emit('receiveBoard', this.board);
+        this.emitBoard();
+    }
+
+    addPlayer(player: string) {
+        this.players.push(player);
     }
 
     deletePlayer(player: string) {
@@ -28,7 +32,7 @@ export class Game {
         this.players.splice(index, 1);
     }
 
-    handleEvent(event: Event) {
+    async handleEvent(event: Event) {
         this.queue.push(event);
         this.processQueue();
     }
@@ -42,7 +46,7 @@ export class Game {
                 this.queue.splice(0, 1);
             }
             this.processing = false;
-            this.io.to(this.gameId).emit('receiveBoard', this.board);
+            this.emitBoard();
         }
     }
 
@@ -51,6 +55,10 @@ export class Game {
             started: false,
             spaces: getEmptyBoard(30, 16)
         };
+        this.emitBoard();
+    }
+
+    emitBoard() {
         this.io.to(this.gameId).emit('receiveBoard', this.board);
     }
 }
