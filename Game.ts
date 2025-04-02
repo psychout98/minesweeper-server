@@ -1,7 +1,7 @@
 import { Server } from "socket.io";
 import { Board, Event, getEmptyBoard, actionEvent } from "./gameUtil";
 
-export default class Game {
+export class Game {
 
     board: Board;
     players: string[];

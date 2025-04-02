@@ -9,6 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.Game = void 0;
 const gameUtil_1 = require("./gameUtil");
 class Game {
     constructor(io, gameId, player) {
@@ -53,4 +54,4 @@ class Game {
         this.io.to(this.gameId).emit('receiveBoard', this.board);
     }
 }
-exports.default = Game;
+exports.Game = Game;
