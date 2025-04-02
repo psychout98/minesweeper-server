@@ -77,7 +77,7 @@ app.get('/joinGame/:gameId', (req, res) => {
   res.status(200).send({ gameId, playerId, board: games.get(gameId).board });
 });
 
-app.post('/event', (req, res) => {
+app.post('/event', async (req, res) => {
   const event = req.body.event;
   const playerId = event.playerId;
   const gameId = players.get(playerId);
@@ -100,11 +100,11 @@ app.post('/event', (req, res) => {
 io.on('connection', (socket) => {
   console.log('a user connected', socket.id);
 
-  socket.on("subscribe", (gameId, playerId) => {
+  socket.on("subscribe", async (gameId, playerId) => {
     socket.join(gameId);
     socket.join(playerId);
 
-    socket.on("disconnecting", () => {
+    socket.on("disconnecting", async () => {
       if (players.delete(playerId)) {
         const game = games.get(gameId);
         if (game) {
@@ -118,7 +118,7 @@ io.on('connection', (socket) => {
       }
     });
 
-    socket.on("mouseMove", (x, y) => {
+    socket.on("mouseMove", async (x, y) => {
       io.to(gameId).except(playerId).emit("mouseMove", x, y, playerId);
     });
   });

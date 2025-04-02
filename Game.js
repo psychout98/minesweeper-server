@@ -63,7 +63,9 @@ class Game {
         this.emitBoard([playerId.toString()]);
     }
     emitBoard(playerIds = []) {
-        this.io.to(this.gameId).except(playerIds).emit('receiveBoard', this.board);
+        return __awaiter(this, void 0, void 0, function* () {
+            this.io.to(this.gameId).except(playerIds).emit('receiveBoard', this.board);
+        });
     }
 }
 exports.Game = Game;
