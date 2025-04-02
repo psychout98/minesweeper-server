@@ -97,7 +97,7 @@ app.post('/event', async (req, res) => {
   }
 });
 
-io.on('connection', (socket) => {
+io.on('connection', async (socket) => {
   console.log('a user connected', socket.id);
 
   socket.on("subscribe", async (gameId, playerId) => {
