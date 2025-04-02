@@ -19,6 +19,8 @@ const io = new Server(server,
   }
 );
 
+const Game = require('./Game')
+
 const games = new Map();
 const players = new Map();
 
