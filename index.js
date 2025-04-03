@@ -28,6 +28,11 @@ const players = new Map();
 app.use(cors(corsOptions));
 app.use(bodyParser.json());
 
+app.get('/board/:gameId', (req, res) => {
+  const board = games.get(Number.parseInt(req.params.gameId).board);
+  res.status(200).send(board);
+});
+
 app.get('/newGame/:playerId?', (req, res) => {
   let playerIdParam = req.params.playerId;
   let playerId;
@@ -97,14 +102,14 @@ app.post('/event', async (req, res) => {
   }
 });
 
-io.on('connection', async (socket) => {
+io.on('connection', (socket) => {
   console.log('a user connected', socket.id);
 
-  socket.on("subscribe", async (gameId, playerId) => {
+  socket.on("subscribe", (gameId, playerId) => {
     socket.join(gameId);
     socket.join(playerId);
 
-    socket.on("disconnecting", async () => {
+    socket.on("disconnecting", () => {
       if (players.delete(playerId)) {
         const game = games.get(gameId);
         if (game) {

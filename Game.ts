@@ -63,6 +63,6 @@ export class Game {
     }
 
     async emitBoard(playerIds: string[] = []) {
-        this.io.to(this.gameId).except(playerIds).emit('receiveBoard', this.board);
+        this.io.to(this.gameId).except(playerIds).emit('receiveBoard');
     }
 }
