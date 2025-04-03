@@ -101,7 +101,7 @@ const actionEvent = (event, board) => {
     const col = space.x;
     const currentSpace = board.spaces[row][col];
     if (space.hidden === currentSpace.hidden && space.flagged === currentSpace.flagged) {
-        if (event.action === Action.REVEAL && currentSpace.hidden) {
+        if (event.action === Action.REVEAL && currentSpace.hidden && !currentSpace.flagged) {
             if (board.started) {
                 if (currentSpace.value === -1) {
                     (0, exports.revealAll)(board.spaces);
