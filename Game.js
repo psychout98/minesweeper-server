@@ -12,28 +12,28 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Game = exports.getBoard = exports.cacheBoard = exports.redis = void 0;
+exports.Game = exports.getBoard = exports.cacheBoard = void 0;
 const gameUtil_1 = require("./gameUtil");
 const bullmq_1 = require("bullmq");
 const ioredis_1 = __importDefault(require("ioredis"));
-exports.redis = new ioredis_1.default('localhost:6379', {
-    maxRetriesPerRequest: null
-});
-// const redis = new Redis(process.env.REDIS_URL as string, {
-//   tls: {
-//       rejectUnauthorized: false
-//   },
+// export const redis = new Redis('localhost:6379', {
 //   maxRetriesPerRequest: null
 // });
+const redis = new ioredis_1.default(process.env.REDIS_URL, {
+    tls: {
+        rejectUnauthorized: false
+    },
+    maxRetriesPerRequest: null
+});
 function cacheBoard(gameId, board) {
     return __awaiter(this, void 0, void 0, function* () {
-        return yield exports.redis.set(gameId, board);
+        return yield redis.set(gameId, board);
     });
 }
 exports.cacheBoard = cacheBoard;
 function getBoard(gameId) {
     return __awaiter(this, void 0, void 0, function* () {
-        const board = yield exports.redis.get(gameId);
+        const board = yield redis.get(gameId);
         if (board) {
             return JSON.parse(board);
         }
@@ -57,9 +57,9 @@ class Game {
     constructor(gameId, playerId, emitUpdate) {
         this.gameId = gameId;
         this.players = [playerId];
-        this.queue = new bullmq_1.Queue(gameId.toString(), { connection: exports.redis });
+        this.queue = new bullmq_1.Queue(gameId.toString(), { connection: redis });
         this.emitUpdate = emitUpdate;
-        const worker = new bullmq_1.Worker(gameId.toString(), processor, { connection: exports.redis });
+        const worker = new bullmq_1.Worker(gameId.toString(), processor, { connection: redis });
         worker.on('drained', emitUpdate);
     }
     addPlayer(player) {
