@@ -1,49 +1,59 @@
-import { Board, Event, getEmptyBoard, actionEvent } from "./gameUtil";
-import { Queue, Worker } from 'bullmq';
+import { Event, actionEvent } from "./gameUtil";
+import { Queue, Worker, Job } from 'bullmq';
 import Redis from "ioredis";
+
+// export const redis = new Redis('localhost:6379', {
+//   maxRetriesPerRequest: null
+// });
+
+const redis = new Redis(process.env.REDIS_URL as string, {
+  tls: {
+      rejectUnauthorized: false
+  },
+  maxRetriesPerRequest: null
+});
+
+async function processor(job: Job) {
+    const gameId = job.queueName;
+    if (gameId) {
+        redis.get(gameId)
+            .then((result) => {
+                if (result) {
+                    const board = JSON.parse(result);
+                    actionEvent(job.data, board);
+                    redis.set(gameId, JSON.stringify(board));
+                }
+            });
+    }
+}
 
 export class Game {
 
-    board: Board;
-    players: string[];
-    processing: boolean;
-    emitBoard: () => void;
     gameId: string;
+    players: number[];
     queue: Queue;
-    worker: Worker;
+    emitUpdate: () => void;
 
-    constructor(gameId: string, playerId: string, connection: Redis, emitBoard: () => void) {
-        this.emitBoard = emitBoard;
+    constructor(gameId: string, playerId: number, emitUpdate: () => void) {
         this.gameId = gameId;
-        this.board = {
-            started: false,
-            spaces: getEmptyBoard(30, 16)
-        };
         this.players = [playerId];
-        this.processing = false;
-        this.queue = new Queue(gameId.toString(), { connection });
-        this.worker = new Worker(gameId.toString(), async job => actionEvent(job.data, this.board), { connection });
-        this.worker.on('drained', this.emitBoard)
+        this.queue = new Queue(gameId.toString(), { connection: redis });
+        this.emitUpdate = emitUpdate;
+        const worker = new Worker(gameId.toString(), processor, { connection: redis });
+        worker.on('drained', emitUpdate);
     }
 
-    addPlayer(player: string) {
+    addPlayer(player: number) {
         this.players.push(player);
     }
 
-    deletePlayer(player: string) {
+    deletePlayer(player: number) {
         const index = this.players.findIndex(p => p === player);
         this.players.splice(index, 1);
     }
 
     async handleEvent(event: Event) {
         this.queue.add('event', event);
-    }
-
-    reset() {
-        this.board = {
-            started: false,
-            spaces: getEmptyBoard(30, 16)
-        };
-        this.emitBoard();
+        // this.queue.count().then(count => console.log(this.gameId, count));
     }
 }

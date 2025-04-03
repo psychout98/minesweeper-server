@@ -3,18 +3,6 @@ const app = express();
 const cors = require('cors');
 const http = require('http');
 const bodyParser = require('body-parser');
-const Redis = require('ioredis');
-
-// const redis = new Redis('localhost:6379', {
-//   maxRetriesPerRequest: null
-// });
-
-const redis = new Redis(process.env.REDIS_URL, {
-  tls: {
-      rejectUnauthorized: false
-  },
-  maxRetriesPerRequest: null
-});
 
 const corsOptions = {
   credentials: true,
@@ -32,67 +20,91 @@ const io = new Server(server,
   }
 );
 
-const { Game } = require('./Game')
+const { Game, redis } = require('./Game');
+const { newGameString, newGameBoard } = require('./gameUtil');
 
 const games = new Map();
 const players = new Map();
+
+function getNewGameId() {
+  const gameId = Math.floor(Math.random() * 8999) + 1000;
+  while (games.has(gameId)) {
+    gameId = Math.floor(Math.random() * 8999) + 1000;
+  }
+  return gameId;
+}
+
+function getNewPlayerId() {
+  const playerId = Math.floor(Math.random() * 8999) + 1000;
+  while (players.has(playerId)) {
+    playerId = Math.floor(Math.random() * 8999) + 1000;
+  }
+  return playerId;
+}
+
+async function startGame(gameId, playerId) {
+  return await redis.set(gameId, newGameString)
+    .then(() => {
+      games.set(gameId, new Game(gameId.toString(), playerId, () => io.to(gameId).emit('receiveBoard')));
+    });
+}
 
 app.use(cors(corsOptions));
 app.use(bodyParser.json());
 
 app.get('/board/:gameId', (req, res) => {
-  const gameId = Number.parseInt(req.params.gameId);
-  const game = games.get(gameId);
-  res.status(200).send(game.board);
+  redis.get(req.params.gameId).then(board => {
+    if (board) {
+      res.status(200).send(JSON.parse(board));
+    } else {
+      res.status(404).send();
+    }
+  });
 });
 
 app.get('/newGame/:playerId?', (req, res) => {
   let playerIdParam = req.params.playerId;
-  let playerId;
+  let playerId, gameId;
   if (playerIdParam) {
     playerId = Number.parseInt(playerIdParam);
-    let gameId = players.get(playerId);
+    gameId = players.get(playerId);
     if (gameId) {
       const game = games.get(gameId);
       if (game) {
-        game.reset(playerId);
-        res.status(200).send({ gameId, playerId, board: game.board });
-        return;
+        redis.set(gameId.toString(), newGameString).then(() => {
+          res.status(200).send({ gameId, playerId, board: newGameBoard });
+        });
       }
+    } else {
+      gameId = getNewGameId();
     }
   } else {
-    playerId = Math.floor(Math.random() * 8999) + 1000;
-    while (players.has(playerId)) {
-      playerId = Math.floor(Math.random() * 8999) + 1000;
-    }
+    playerId = getNewPlayerId();
+    gameId = getNewGameId();
   }
-  let gameId = Math.floor(Math.random() * 8999) + 1000;
-  while (games.has(gameId)) {
-    gameId = Math.floor(Math.random() * 8999) + 1000;
-  }
+  players.set(playerId, gameId);
+  startGame(gameId, playerId)
+    .then(() => {
+      res.status(200).send({ gameId, playerId, board: newGameBoard });
+    });
+});
+
+app.get('/joinGame/:gameId', (req, res) => {
+  const playerId = getNewPlayerId();
+  let gameId = Number.parseInt(req.params.gameId);
   players.set(playerId, gameId);
   const game = games.get(gameId);
   if (game) {
     game.addPlayer(playerId);
+    redis.get(req.params.gameId).then(board => {
+      res.status(200).send({ gameId, playerId, board: JSON.parse(board)});
+    });
   } else {
-    games.set(gameId, new Game(gameId, playerId, redis, () => io.to(gameId).emit('receiveBoard')));
+    startGame(gameId.toString(), playerId)
+    .then(() => {
+      res.status(200).send({ gameId, playerId, board: newGameBoard });
+    });
   }
-  res.status(200).send({ gameId, playerId, board: games.get(gameId).board });
-});
-
-app.get('/joinGame/:gameId', (req, res) => {
-  let playerId = Math.floor(Math.random() * 8999) + 1000;
-  while (players.has(playerId)) {
-    playerId = Math.floor(Math.random() * 8999) + 1000;
-  }
-  let gameId = Number.parseInt(req.params.gameId);
-  const game = games.get(gameId);
-  if (game) {
-    game.addPlayer(playerId);
-  } else {
-    games.set(gameId, new Game(gameId, playerId, redis, () => io.to(gameId).emit('receiveBoard')));
-  }
-  res.status(200).send({ gameId, playerId, board: games.get(gameId).board });
 });
 
 app.post('/event', (req, res) => {
@@ -105,10 +117,10 @@ app.post('/event', (req, res) => {
       game.handleEvent(event);
       res.status(200).send();
     } else {
-      res.status(404).send();
+      res.status(404).send('No active game');
     }
   } else {
-    res.status(404).send();
+    res.status(404).send('GameId not found for player');
   }
 });
 

@@ -143,3 +143,10 @@ export const actionEvent = (event: Event, board: Board) => {
         }
     }
 }
+
+export const newGameBoard = {
+    started: false,
+    spaces: getEmptyBoard(30, 16)
+};
+
+export const newGameString = JSON.stringify(newGameBoard);

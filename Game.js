@@ -8,23 +8,46 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Game = void 0;
 const gameUtil_1 = require("./gameUtil");
 const bullmq_1 = require("bullmq");
+const ioredis_1 = __importDefault(require("ioredis"));
+// export const redis = new Redis('localhost:6379', {
+//   maxRetriesPerRequest: null
+// });
+const redis = new ioredis_1.default(process.env.REDIS_URL, {
+    tls: {
+        rejectUnauthorized: false
+    },
+    maxRetriesPerRequest: null
+});
+function processor(job) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const gameId = job.queueName;
+        if (gameId) {
+            redis.get(gameId)
+                .then((result) => {
+                if (result) {
+                    const board = JSON.parse(result);
+                    (0, gameUtil_1.actionEvent)(job.data, board);
+                    redis.set(gameId, JSON.stringify(board));
+                }
+            });
+        }
+    });
+}
 class Game {
-    constructor(gameId, playerId, connection, emitBoard) {
-        this.emitBoard = emitBoard;
+    constructor(gameId, playerId, emitUpdate) {
         this.gameId = gameId;
-        this.board = {
-            started: false,
-            spaces: (0, gameUtil_1.getEmptyBoard)(30, 16)
-        };
         this.players = [playerId];
-        this.processing = false;
-        this.queue = new bullmq_1.Queue(gameId.toString(), { connection });
-        this.worker = new bullmq_1.Worker(gameId.toString(), (job) => __awaiter(this, void 0, void 0, function* () { return (0, gameUtil_1.actionEvent)(job.data, this.board); }), { connection });
-        this.worker.on('drained', this.emitBoard);
+        this.queue = new bullmq_1.Queue(gameId.toString(), { connection: redis });
+        this.emitUpdate = emitUpdate;
+        const worker = new bullmq_1.Worker(gameId.toString(), processor, { connection: redis });
+        worker.on('drained', emitUpdate);
     }
     addPlayer(player) {
         this.players.push(player);
@@ -36,14 +59,8 @@ class Game {
     handleEvent(event) {
         return __awaiter(this, void 0, void 0, function* () {
             this.queue.add('event', event);
+            // this.queue.count().then(count => console.log(this.gameId, count));
         });
-    }
-    reset() {
-        this.board = {
-            started: false,
-            spaces: (0, gameUtil_1.getEmptyBoard)(30, 16)
-        };
-        this.emitBoard();
     }
 }
 exports.Game = Game;

@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.actionEvent = exports.cascadeReveal = exports.getFlags = exports.revealAll = exports.getEmptyBoard = exports.buildMinefield = exports.Action = void 0;
+exports.newGameString = exports.newGameBoard = exports.actionEvent = exports.cascadeReveal = exports.getFlags = exports.revealAll = exports.getEmptyBoard = exports.buildMinefield = exports.Action = void 0;
 var Action;
 (function (Action) {
     Action[Action["REVEAL"] = 0] = "REVEAL";
@@ -124,3 +124,8 @@ const actionEvent = (event, board) => {
     }
 };
 exports.actionEvent = actionEvent;
+exports.newGameBoard = {
+    started: false,
+    spaces: (0, exports.getEmptyBoard)(30, 16)
+};
+exports.newGameString = JSON.stringify(exports.newGameBoard);
