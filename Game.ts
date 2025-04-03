@@ -22,17 +22,16 @@ export async function getBoard(gameId: string) {
 }
 
 async function processor(job: Job) {
+    await new Promise(r => setTimeout(r, 2000));
     const gameId = job.queueName;
-    if (gameId) {
-        getBoard(gameId)
-            .then((result) => {
-                if (result) {
-                    const board = JSON.parse(result);
-                    actionEvent(job.data, board);
-                    cacheBoard(gameId, JSON.stringify(board));
-                }
-            });
-    }
+    getBoard(gameId)
+        .then((result) => {
+            if (result) {
+                const board = JSON.parse(result);
+                actionEvent(job.data, board);
+                cacheBoard(gameId, JSON.stringify(board));
+            }
+        });
 }
 
 export class Game {
