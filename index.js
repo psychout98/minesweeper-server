@@ -43,7 +43,7 @@ function getNewPlayerId() {
 }
 
 async function startGame(gameId, playerId) {
-  const game = new Game(gameId.toString(), playerId, () => io.to(gameId).emit('receiveBoard'));
+  const game = new Game(gameId.toString(), playerId, () => getBoard(gameId).then(board => io.to(gameId).emit('receiveBoard', board)));
   games.set(gameId, game);
   return await cacheBoard(gameId, newGameString)
 }
@@ -53,12 +53,8 @@ app.use(bodyParser.json());
 
 app.get('/board/:gameId', (req, res) => {
   getBoard(req.params.gameId).then(board => {
-    if (board) {
-      res.status(200).send(JSON.parse(board));
-    } else {
-      res.status(404).send();
-    }
-  });
+    res.status(200).send(board);
+  }).catch(e => res.status(404).send(e));
 });
 
 app.get('/newGame/:playerId?', (req, res) => {

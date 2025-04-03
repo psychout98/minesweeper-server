@@ -18,19 +18,20 @@ export async function cacheBoard(gameId: string, board: string) {
 }
 
 export async function getBoard(gameId: string) {
-    return await redis.get(gameId);
+    const board = await redis.get(gameId);
+    if (board) {
+        return JSON.parse(board);
+    } else {
+        throw new Error(`Game ${gameId} not found`);
+    }
 }
 
 async function processor(job: Job) {
-    await new Promise(r => setTimeout(r, 2000));
     const gameId = job.queueName;
-    getBoard(gameId)
-        .then((result) => {
-            if (result) {
-                const board = JSON.parse(result);
-                actionEvent(job.data, board);
-                cacheBoard(gameId, JSON.stringify(board));
-            }
+    return await getBoard(gameId)
+        .then((board) => {
+            actionEvent(job.data, board);
+            return cacheBoard(gameId, JSON.stringify(board));
         });
 }
 
