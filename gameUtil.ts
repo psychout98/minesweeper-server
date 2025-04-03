@@ -135,6 +135,7 @@ export const actionEvent = (event: Event, board: Board) => {
                 }
             } else {
                 buildMinefield(board.spaces, 99, currentSpace);
+                board.started = true;
             }
         }
         if (event.action === Action.FLAG) {

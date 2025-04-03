@@ -5,6 +5,10 @@ const http = require('http');
 const bodyParser = require('body-parser');
 const Redis = require('ioredis');
 
+// const redis = new Redis('localhost:6379', {
+//   maxRetriesPerRequest: null
+// });
+
 const redis = new Redis(process.env.REDIS_URL, {
   tls: {
       rejectUnauthorized: false
@@ -37,8 +41,9 @@ app.use(cors(corsOptions));
 app.use(bodyParser.json());
 
 app.get('/board/:gameId', (req, res) => {
-  const board = games.get(Number.parseInt(req.params.gameId).board);
-  res.status(200).send(board);
+  const gameId = Number.parseInt(req.params.gameId);
+  const game = games.get(gameId);
+  res.status(200).send(game.board);
 });
 
 app.get('/newGame/:playerId?', (req, res) => {
