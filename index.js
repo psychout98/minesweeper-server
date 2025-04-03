@@ -66,9 +66,9 @@ app.get('/newGame/:playerId?', (req, res) => {
     if (gameId) {
       const game = games.get(gameId);
       if (game) {
-        cacheBoard(gameId.toString(), newGameString).then(() => {
-          res.status(200).send({ gameId, playerId, board: newGameBoard });
-        });
+        cacheBoard(gameId.toString(), newGameString);
+        res.status(200).send({ gameId, playerId, board: newGameBoard });
+        return;
       }
     } else {
       gameId = getNewGameId();
