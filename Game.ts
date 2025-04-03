@@ -13,6 +13,10 @@ const redis = new Redis(process.env.REDIS_URL as string, {
   maxRetriesPerRequest: null
 });
 
+export async function cacheBoard(gameId: string, board: string) {
+    return await redis.set(gameId, board);
+}
+
 async function processor(job: Job) {
     const gameId = job.queueName;
     if (gameId) {
@@ -21,7 +25,7 @@ async function processor(job: Job) {
                 if (result) {
                     const board = JSON.parse(result);
                     actionEvent(job.data, board);
-                    redis.set(gameId, JSON.stringify(board));
+                    cacheBoard(gameId, JSON.stringify(board));
                 }
             });
     }

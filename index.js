@@ -20,7 +20,7 @@ const io = new Server(server,
   }
 );
 
-const { Game, redis } = require('./Game');
+const { Game, cacheBoard } = require('./Game');
 const { newGameString, newGameBoard } = require('./gameUtil');
 
 const games = new Map();
@@ -43,10 +43,9 @@ function getNewPlayerId() {
 }
 
 async function startGame(gameId, playerId) {
-  return await redis.set(gameId, newGameString)
-    .then(() => {
-      games.set(gameId, new Game(gameId.toString(), playerId, () => io.to(gameId).emit('receiveBoard')));
-    });
+  const game = new Game(gameId.toString(), playerId, () => io.to(gameId).emit('receiveBoard'));
+  games.set(gameId, game);
+  return await cacheBoard(gameId, newGameString)
 }
 
 app.use(cors(corsOptions));
