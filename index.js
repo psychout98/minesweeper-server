@@ -110,6 +110,8 @@ io.on('connection', (socket) => {
     socket.join(playerId);
 
     socket.on("disconnecting", () => {
+      socket.leave(gameId);
+      socket.leave(playerId);
       if (players.delete(playerId)) {
         const game = games.get(gameId);
         if (game) {
