@@ -5,7 +5,7 @@ const http = require('http');
 const bodyParser = require('body-parser');
 const Redis = require('ioredis');
 
-const redis = new Redis();
+const redis = new Redis(process.env.REDIS_URL);
 
 const corsOptions = {
   credentials: true,
