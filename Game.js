@@ -11,17 +11,20 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Game = void 0;
 const gameUtil_1 = require("./gameUtil");
+const bullmq_1 = require("bullmq");
 class Game {
-    constructor(io, gameId, playerId) {
+    constructor(io, gameId, playerId, connection) {
         this.io = io;
         this.gameId = gameId;
         this.board = {
             started: false,
             spaces: (0, gameUtil_1.getEmptyBoard)(30, 16)
         };
-        this.queue = [];
         this.players = [playerId];
         this.processing = false;
+        this.queue = new bullmq_1.Queue(gameId.toString(), { connection });
+        this.worker = new bullmq_1.Worker(gameId.toString(), (job) => __awaiter(this, void 0, void 0, function* () { return (0, gameUtil_1.actionEvent)(job.data, this.board); }), { connection });
+        this.worker.on('drained', this.emitBoard);
     }
     addPlayer(player) {
         this.players.push(player);
@@ -32,39 +35,19 @@ class Game {
     }
     handleEvent(event) {
         return __awaiter(this, void 0, void 0, function* () {
-            this.queue.push(event);
-            this.processQueue();
+            this.queue.add('event', event);
         });
     }
-    processQueue() {
-        return __awaiter(this, void 0, void 0, function* () {
-            if (!this.processing) {
-                const callbacks = [];
-                const playerIds = [];
-                this.processing = true;
-                while (this.queue.length > 0) {
-                    const top = this.queue[0];
-                    callbacks.push(top.callback);
-                    playerIds.push(top.playerId.toString());
-                    (0, gameUtil_1.actionEvent)(top, this.board);
-                    this.queue.splice(0, 1);
-                }
-                this.processing = false;
-                callbacks.forEach(f => f(this.board));
-                this.emitBoard(playerIds);
-            }
-        });
-    }
-    reset(playerId) {
+    reset() {
         this.board = {
             started: false,
             spaces: (0, gameUtil_1.getEmptyBoard)(30, 16)
         };
-        this.emitBoard([playerId.toString()]);
+        this.emitBoard();
     }
-    emitBoard(playerIds = []) {
+    emitBoard() {
         return __awaiter(this, void 0, void 0, function* () {
-            this.io.to(this.gameId).except(playerIds).emit('receiveBoard');
+            this.io.to(this.gameId).emit('receiveBoard');
         });
     }
 }

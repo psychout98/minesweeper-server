@@ -3,6 +3,9 @@ const app = express();
 const cors = require('cors');
 const http = require('http');
 const bodyParser = require('body-parser');
+const Redis = require('ioredis');
+
+const redis = new Redis();
 
 const corsOptions = {
   credentials: true,
@@ -62,7 +65,7 @@ app.get('/newGame/:playerId?', (req, res) => {
   if (game) {
     game.addPlayer(playerId);
   } else {
-    games.set(gameId, new Game(io, gameId, playerId));
+    games.set(gameId, new Game(io, gameId, playerId, redis));
   }
   res.status(200).send({ gameId, playerId, board: games.get(gameId).board });
 });
@@ -77,23 +80,20 @@ app.get('/joinGame/:gameId', (req, res) => {
   if (game) {
     game.addPlayer(playerId);
   } else {
-    games.set(gameId, new Game(io, gameId, playerId));
+    games.set(gameId, new Game(io, gameId, playerId, redis));
   }
   res.status(200).send({ gameId, playerId, board: games.get(gameId).board });
 });
 
-app.post('/event', async (req, res) => {
+app.post('/event', (req, res) => {
   const event = req.body.event;
   const playerId = event.playerId;
   const gameId = players.get(playerId);
   if (gameId) {
     const game = games.get(gameId);
     if (game) {
-      const event = {
-        ...req.body.event,
-        callback: (board) => res.status(200).send({ gameId, playerId, board })
-      };
       game.handleEvent(event);
+      res.status(200).send();
     } else {
       res.status(404).send();
     }

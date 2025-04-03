@@ -1,25 +1,30 @@
 import { Server } from "socket.io";
 import { Board, Event, getEmptyBoard, actionEvent } from "./gameUtil";
+import { Queue, Worker } from 'bullmq';
+import Redis from "ioredis";
 
 export class Game {
 
     board: Board;
     players: string[];
-    queue: Event[];
     processing: boolean;
     io: Server;
     gameId: string;
+    queue: Queue;
+    worker: Worker;
 
-    constructor(io: Server, gameId: string, playerId: string) {
+    constructor(io: Server, gameId: string, playerId: string, connection: Redis) {
         this.io = io;
         this.gameId = gameId;
         this.board = {
             started: false,
             spaces: getEmptyBoard(30, 16)
         };
-        this.queue = [];
         this.players = [playerId];
         this.processing = false;
+        this.queue = new Queue(gameId.toString(), { connection });
+        this.worker = new Worker(gameId.toString(), async job => actionEvent(job.data, this.board), { connection });
+        this.worker.on('drained', this.emitBoard)
     }
 
     addPlayer(player: string) {
@@ -32,37 +37,18 @@ export class Game {
     }
 
     async handleEvent(event: Event) {
-        this.queue.push(event);
-        this.processQueue();
+        this.queue.add('event', event);
     }
 
-    async processQueue() {
-        if (!this.processing) {
-            const callbacks: Function[] = [];
-            const playerIds: string[] = [];
-            this.processing = true;
-            while (this.queue.length > 0) {
-                const top = this.queue[0];
-                callbacks.push(top.callback);
-                playerIds.push(top.playerId.toString());
-                actionEvent(top, this.board);
-                this.queue.splice(0, 1);
-            }
-            this.processing = false;
-            callbacks.forEach(f => f(this.board));
-            this.emitBoard(playerIds);
-        }
-    }
-
-    reset(playerId: number) {
+    reset() {
         this.board = {
             started: false,
             spaces: getEmptyBoard(30, 16)
         };
-        this.emitBoard([playerId.toString()]);
+        this.emitBoard();
     }
 
-    async emitBoard(playerIds: string[] = []) {
-        this.io.to(this.gameId).except(playerIds).emit('receiveBoard');
+    async emitBoard() {
+        this.io.to(this.gameId).emit('receiveBoard');
     }
 }
