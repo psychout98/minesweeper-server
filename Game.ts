@@ -17,10 +17,14 @@ export async function cacheBoard(gameId: string, board: string) {
     return await redis.set(gameId, board);
 }
 
+export async function getBoard(gameId: string) {
+    return await redis.get(gameId);
+}
+
 async function processor(job: Job) {
     const gameId = job.queueName;
     if (gameId) {
-        redis.get(gameId)
+        getBoard(gameId)
             .then((result) => {
                 if (result) {
                     const board = JSON.parse(result);

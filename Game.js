@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Game = exports.cacheBoard = void 0;
+exports.Game = exports.getBoard = exports.cacheBoard = void 0;
 const gameUtil_1 = require("./gameUtil");
 const bullmq_1 = require("bullmq");
 const ioredis_1 = __importDefault(require("ioredis"));
@@ -31,11 +31,17 @@ function cacheBoard(gameId, board) {
     });
 }
 exports.cacheBoard = cacheBoard;
+function getBoard(gameId) {
+    return __awaiter(this, void 0, void 0, function* () {
+        return yield redis.get(gameId);
+    });
+}
+exports.getBoard = getBoard;
 function processor(job) {
     return __awaiter(this, void 0, void 0, function* () {
         const gameId = job.queueName;
         if (gameId) {
-            redis.get(gameId)
+            getBoard(gameId)
                 .then((result) => {
                 if (result) {
                     const board = JSON.parse(result);

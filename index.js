@@ -20,7 +20,7 @@ const io = new Server(server,
   }
 );
 
-const { Game, cacheBoard } = require('./Game');
+const { Game, cacheBoard, getBoard } = require('./Game');
 const { newGameString, newGameBoard } = require('./gameUtil');
 
 const games = new Map();
@@ -52,7 +52,7 @@ app.use(cors(corsOptions));
 app.use(bodyParser.json());
 
 app.get('/board/:gameId', (req, res) => {
-  redis.get(req.params.gameId).then(board => {
+  getBoard(req.params.gameId).then(board => {
     if (board) {
       res.status(200).send(JSON.parse(board));
     } else {
@@ -70,7 +70,7 @@ app.get('/newGame/:playerId?', (req, res) => {
     if (gameId) {
       const game = games.get(gameId);
       if (game) {
-        redis.set(gameId.toString(), newGameString).then(() => {
+        cacheBoard(gameId.toString(), newGameString).then(() => {
           res.status(200).send({ gameId, playerId, board: newGameBoard });
         });
       }
@@ -95,7 +95,7 @@ app.get('/joinGame/:gameId', (req, res) => {
   const game = games.get(gameId);
   if (game) {
     game.addPlayer(playerId);
-    redis.get(req.params.gameId).then(board => {
+    getBoard(req.params.gameId).then(board => {
       res.status(200).send({ gameId, playerId, board: JSON.parse(board)});
     });
   } else {
