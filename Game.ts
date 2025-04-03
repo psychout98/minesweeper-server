@@ -1,4 +1,3 @@
-import { Server } from "socket.io";
 import { Board, Event, getEmptyBoard, actionEvent } from "./gameUtil";
 import { Queue, Worker } from 'bullmq';
 import Redis from "ioredis";
@@ -8,13 +7,13 @@ export class Game {
     board: Board;
     players: string[];
     processing: boolean;
-    io: Server;
+    emitBoard: () => void;
     gameId: string;
     queue: Queue;
     worker: Worker;
 
-    constructor(io: Server, gameId: string, playerId: string, connection: Redis) {
-        this.io = io;
+    constructor(gameId: string, playerId: string, connection: Redis, emitBoard: () => void) {
+        this.emitBoard = emitBoard;
         this.gameId = gameId;
         this.board = {
             started: false,
@@ -46,9 +45,5 @@ export class Game {
             spaces: getEmptyBoard(30, 16)
         };
         this.emitBoard();
-    }
-
-    async emitBoard() {
-        this.io.to(this.gameId).emit('receiveBoard');
     }
 }

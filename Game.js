@@ -13,8 +13,8 @@ exports.Game = void 0;
 const gameUtil_1 = require("./gameUtil");
 const bullmq_1 = require("bullmq");
 class Game {
-    constructor(io, gameId, playerId, connection) {
-        this.io = io;
+    constructor(gameId, playerId, connection, emitBoard) {
+        this.emitBoard = emitBoard;
         this.gameId = gameId;
         this.board = {
             started: false,
@@ -44,11 +44,6 @@ class Game {
             spaces: (0, gameUtil_1.getEmptyBoard)(30, 16)
         };
         this.emitBoard();
-    }
-    emitBoard() {
-        return __awaiter(this, void 0, void 0, function* () {
-            this.io.to(this.gameId).emit('receiveBoard');
-        });
     }
 }
 exports.Game = Game;

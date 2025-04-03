@@ -70,7 +70,7 @@ app.get('/newGame/:playerId?', (req, res) => {
   if (game) {
     game.addPlayer(playerId);
   } else {
-    games.set(gameId, new Game(io, gameId, playerId, redis));
+    games.set(gameId, new Game(gameId, playerId, redis, () => io.to(gameId).emit('receiveBoard')));
   }
   res.status(200).send({ gameId, playerId, board: games.get(gameId).board });
 });
@@ -85,7 +85,7 @@ app.get('/joinGame/:gameId', (req, res) => {
   if (game) {
     game.addPlayer(playerId);
   } else {
-    games.set(gameId, new Game(io, gameId, playerId, redis));
+    games.set(gameId, new Game(gameId, playerId, redis, () => io.to(gameId).emit('receiveBoard')));
   }
   res.status(200).send({ gameId, playerId, board: games.get(gameId).board });
 });
