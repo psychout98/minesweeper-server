@@ -92,7 +92,7 @@ app.get('/joinGame/:gameId', (req, res) => {
   if (game) {
     game.addPlayer(playerId);
     getBoard(req.params.gameId).then(board => {
-      res.status(200).send({ gameId, playerId, board: JSON.parse(board)});
+      res.status(200).send({ gameId, playerId, board: board});
     });
   } else {
     startGame(gameId.toString(), playerId)
